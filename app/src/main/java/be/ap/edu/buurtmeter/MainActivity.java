@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         mapView.getController().setZoom(16.0);
         // default = meistraat
 
-        mapView.getController().setCenter(new GeoPoint(51.2244, 4.38566));
+        mapView.getController().setCenter(new GeoPoint(51.2164348, 4.4112339));
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
