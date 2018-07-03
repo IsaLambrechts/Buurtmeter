@@ -2,4 +2,13 @@
     <string name="app_name">Buurtmeter</string>
     <string name="title_map">Map</string>
     <string name="title_data">Data</string>
+    <string name="title_activity_data">DataActivity</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="datasets">Datasets</string>
+    <string name="title_activity_main2">Main2Activity</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
 </resources>
