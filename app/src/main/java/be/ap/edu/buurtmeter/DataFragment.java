@@ -9,6 +9,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,6 +46,7 @@ public class DataFragment extends Fragment {
 
     private RequestQueue mRequestQueue;
     private JSONObject obj = new JSONObject();
+    private SharedPreferences sharedPref = null;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -88,16 +91,90 @@ public class DataFragment extends Fragment {
         // Inflate the layout for this fragment
         View view =  inflater.inflate(R.layout.fragment_data, container, false);
 
-        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         String dataSets = sharedPref.getString("dataSets", "{}");
         try {
             obj = new JSONObject(dataSets);
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        System.out.println(obj.length());
+        saveData(obj);
 
-        if (obj.length() == 0) {
+        TextView dataSetID = view.findViewById(R.id.textView);
+        ListView listView = view.findViewById(R.id.listview);
+        try {
+            String size = sharedPref.getString("dataSets", "{}");
+            JSONObject json = new JSONObject(size);
+            dataSetID.setText(String.format("Datasets (%d)", json.length()));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
+        String[] array = new String[obj.length()];
+        if(obj.length() > 0) {
+            JSONArray names = obj.names();
+            for (int i = 0; i < names.length(); i++) {
+                try {
+                    String type = obj.getJSONObject(names.getString(i)).getString("type");
+                    array[i] = type;
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            System.out.println(array);
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(),
+                    android.R.layout.simple_list_item_1, android.R.id.text1, array);
+
+            listView.setAdapter(adapter);
+
+
+        }
+
+        return view;
+    }
+
+    // TODO: Rename method, update argument and hook method into UI event
+    public void onButtonPressed(Uri uri) {
+        if (mListener != null) {
+            mListener.onFragmentInteraction(uri);
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof OnFragmentInteractionListener) {
+            mListener = (OnFragmentInteractionListener) context;
+        } else {
+            Toast.makeText(context, "Data fragment attached", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mListener = null;
+    }
+
+    /**
+     * This interface must be implemented by activities that contain this
+     * fragment to allow an interaction in this fragment to be communicated
+     * to the activity and potentially other fragments contained in that
+     * activity.
+     * <p>
+     * See the Android Training lesson <a href=
+     * "http://developer.android.com/training/basics/fragments/communicating.html"
+     * >Communicating with Other Fragments</a> for more information.
+     */
+    public interface OnFragmentInteractionListener {
+        // TODO: Update argument type and name
+        void onFragmentInteraction(Uri uri);
+    }
+
+    public void saveData(JSONObject jsonObject) {
+        if(jsonObject.length() == 0) {
             ((MainActivity) getActivity()).setTitle("Ophalen Data...");
             String url = "http://datasets.antwerpen.be/v1/opendata/statistieken.json";
 
@@ -107,7 +184,6 @@ public class DataFragment extends Fragment {
             JsonObjectRequest jr = new JsonObjectRequest(url, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    //Log.d("edu.ap.maps", response.toString());
                     obj = response;
                     JSONArray statistics = new JSONArray();
                     try {
@@ -115,7 +191,7 @@ public class DataFragment extends Fragment {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    for(int i = 0; i < statistics.length(); i++) {
+                    for (int i = 0; i < statistics.length(); i++) {
                         try {
                             if (statistics.getJSONObject(i).getString("package").equals("geografie")) {
                                 final JSONArray finalStatistics = statistics;
@@ -139,10 +215,9 @@ public class DataFragment extends Fragment {
                                                     JSONObject set = new JSONObject("{\"used\":" + false + ", \"range\":" + 5 + ", \"resource\":\"" + resource + "\", \"type\": \"" + type + "\"}");
                                                     sets.put(set.getString("resource"), set);
 
-                                                    SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
                                                     SharedPreferences.Editor editor = sharedPref.edit();
                                                     editor.putString("dataSets", String.valueOf(sets));
-                                                    editor.commit();
+                                                    editor.apply();
                                                 }
                                             }
                                         } catch (JSONException e) {
@@ -196,54 +271,5 @@ public class DataFragment extends Fragment {
         } else {
             ((MainActivity) getActivity()).setTitle("Buurtmeter");
         }
-
-        TextView dataSetID = view.findViewById(R.id.textView);
-        try {
-            String size = sharedPref.getString("dataSets", "{}");
-            JSONObject json = new JSONObject(size);
-            dataSetID.setText(String.format("Datasets (%d)", json.length()));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        return view;
-    }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            Toast.makeText(context, "Data fragment attached", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
     }
 }
