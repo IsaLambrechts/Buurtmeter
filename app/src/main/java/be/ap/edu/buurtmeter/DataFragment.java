@@ -29,6 +29,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -111,23 +114,26 @@ public class DataFragment extends Fragment {
             e.printStackTrace();
         }
 
-        String[] array = new String[obj.length()];
+        ArrayList<String> array = new ArrayList<>();
         if(obj.length() > 0) {
             JSONArray names = obj.names();
             for (int i = 0; i < names.length(); i++) {
                 try {
                     String type = obj.getJSONObject(names.getString(i)).getString("type");
-                    array[i] = type;
+                    array.add(type);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
 
-            System.out.println(array);
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(),
-                    android.R.layout.simple_list_item_1, android.R.id.text1, array);
+//            System.out.println(array);
+//            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(),
+//                    android.R.layout.simple_list_item_1, android.R.id.text1, array);
 
-            listView.setAdapter(adapter);
+            // listView.setAdapter(adapter);
+
+            DataAdapter dataAdapter = new DataAdapter(getActivity(), array);
+            listView.setAdapter(dataAdapter);
 
 
         }
