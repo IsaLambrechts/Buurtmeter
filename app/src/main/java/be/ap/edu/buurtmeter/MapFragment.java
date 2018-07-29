@@ -15,11 +15,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Polygon;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,27 +99,52 @@ public class MapFragment extends Fragment {
 
         mapView.getController().setCenter(new GeoPoint(51.2164348, 4.4112339));
 
-        List<GeoPoint> geoPoints = new ArrayList<>();
-//add your points here
-        geoPoints.add(new GeoPoint(51.2164348, 4.4112339));
-        geoPoints.add(new GeoPoint(51.229857372061, 4.4242370563038));
-        geoPoints.add(new GeoPoint(51.229829165066, 4.4244103034827));
-        Polygon polygon = new Polygon();    //see note below
-        polygon.setFillColor(Color.argb(75, 255,0,0));
-        geoPoints.add(geoPoints.get(0));    //forces the loop to close
-        polygon.setPoints(geoPoints);
-        polygon.setTitle("A sample polygon");
+        try {
+            JSONArray areas = new JSONArray(loadJSONFromAsset(getActivity()));
+            for(int i = 0; i < areas.length(); i++){
+                JSONObject area = new JSONObject(areas.getJSONObject(i).getString("geometry"));
+                JSONArray coordinates = area.getJSONArray("coordinates");
+                System.out.println(coordinates.length());
+                for(int j = 0; j < coordinates.length(); j++){
+                    System.out.println(coordinates.getJSONArray(j).getJSONArray(0));
+                    List<GeoPoint> geoPoints = new ArrayList<>();
+                    for(int k = 0; k < coordinates.getJSONArray(j).length(); k++) {
+                        JSONArray coords = coordinates.getJSONArray(j).getJSONArray(k);
+                        geoPoints.add(new GeoPoint(coords.getDouble(1),coords.getDouble(0)));
+                    }
+                    Polygon polygon = new Polygon();    //see note below
+//                    polygon.setFillColor(Color.argb(75, 255,0,0));
+                    geoPoints.add(geoPoints.get(0));    //forces the loop to close
+                    polygon.setPoints(geoPoints);
+                    polygon.setTitle("A sample polygon");
+                    mapView.getOverlayManager().add(polygon);
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
-//polygons supports holes too, points should be in a counter-clockwise order
-        List<List<GeoPoint>> holes = new ArrayList<>();
-        holes.add(geoPoints);
-        polygon.setHoles(holes);
 
-        mapView.getOverlayManager().add(polygon);
+//        List<GeoPoint> geoPoints = new ArrayList<>();
+////add your points here
+//        geoPoints.add(new GeoPoint(51.2164348, 4.4112339));
+//        geoPoints.add(new GeoPoint(51.229857372061, 4.4242370563038));
+//        geoPoints.add(new GeoPoint(51.229829165066, 4.4244103034827));
+//        Polygon polygon = new Polygon();    //see note below
+//        polygon.setFillColor(Color.argb(75, 255,0,0));
+//        geoPoints.add(geoPoints.get(0));    //forces the loop to close
+//        polygon.setPoints(geoPoints);
+//        polygon.setTitle("A sample polygon");
+//
+////polygons supports holes too, points should be in a counter-clockwise order
+//        List<List<GeoPoint>> holes = new ArrayList<>();
+//        holes.add(geoPoints);
+//        polygon.setHoles(holes);
+//
+//        mapView.getOverlayManager().add(polygon);
 
         SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         String dataSets = sharedPref.getString("dataSets", "{}");
-        System.out.println(dataSets);
 
         return view;
     }
@@ -177,5 +207,35 @@ public class MapFragment extends Fragment {
                 requestPermissions(params, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
             }
         } // else: We already have permissions, so handle as normal
+    }
+
+//    private JSONObject getAllAreas() throws JSONException {
+//        JSONObject areas = new JSONObject(area.toString());
+//        System.out.println(areas);
+//        return areas;
+//    }
+
+    public String loadJSONFromAsset(Context context) {
+        String json = null;
+        try {
+            InputStream is = context.getAssets().open("areas.json");
+
+            int size = is.available();
+
+            byte[] buffer = new byte[size];
+
+            is.read(buffer);
+
+            is.close();
+
+            json = new String(buffer, "UTF-8");
+
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        return json;
+
     }
 }
