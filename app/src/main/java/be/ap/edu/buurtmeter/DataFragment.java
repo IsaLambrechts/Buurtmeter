@@ -5,32 +5,25 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.RetryPolicy;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.JsonRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -114,13 +107,15 @@ public class DataFragment extends Fragment {
             e.printStackTrace();
         }
 
-        ArrayList<String> array = new ArrayList<>();
+        ArrayList<Data> array = new ArrayList<>();
         if(obj.length() > 0) {
             JSONArray names = obj.names();
             for (int i = 0; i < names.length(); i++) {
                 try {
                     String type = obj.getJSONObject(names.getString(i)).getString("type");
-                    array.add(type);
+                    Boolean used = obj.getJSONObject(names.getString(i)).getBoolean("used");
+                    int amount = obj.getJSONObject(names.getString(i)).getInt("range");
+                    array.add(new Data(type, amount, used));
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -135,8 +130,8 @@ public class DataFragment extends Fragment {
             DataAdapter dataAdapter = new DataAdapter(getActivity(), array);
             listView.setAdapter(dataAdapter);
 
-
         }
+
 
         return view;
     }

@@ -32,6 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/lstvw_textView"
-        android:layout_alignParentLeft="true" />
+        android:layout_alignParentLeft="true"
+        android:max="10"/>
 
 </RelativeLayout>
