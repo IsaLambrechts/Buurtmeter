@@ -3,6 +3,7 @@ package be.ap.edu.buurtmeter;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,11 +13,19 @@ import android.widget.CompoundButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.RetryPolicy;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public class DataAdapter extends BaseAdapter {
 
@@ -90,6 +99,8 @@ public class DataAdapter extends BaseAdapter {
 
                             editor.putString("dataSets", String.valueOf(myDataSets));
                             editor.apply();
+
+                            load(dataText.getText().toString(), i);
                         }
                     }
                     editor.putString("dataSets", String.valueOf(myDataSets));
@@ -132,5 +143,69 @@ public class DataAdapter extends BaseAdapter {
         });
 
         return rowView;
+    }
+
+    private void load(String name, int i) throws JSONException {
+        String dataSets = sharedPref.getString("dataSets", "{}");
+        System.out.println(dataSets);
+        JSONObject myDataSets = new JSONObject(dataSets);
+        JSONArray names = myDataSets.names();
+
+
+        if (myDataSets.getJSONObject(names.getString(i)).getBoolean("used")) {
+            if (!sharedPref.contains(myDataSets.getJSONObject(names.getString(i)).getString("resource") + ".json")) {
+                System.out.println("in if");
+                System.out.println(myDataSets.getJSONObject(names.getString(i)).getString("resource"));
+                RequestQueue mRequestQueue = Volley.newRequestQueue((Activity) mContext);
+                String url = "http://datasets.antwerpen.be/v4/gis/";
+                final JSONObject sets = new JSONObject();
+                int finalI = i;
+                JsonObjectRequest jr = new JsonObjectRequest(url + myDataSets.getJSONObject(names.getString(i)).getString("resource") + ".json", new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        JSONObject obj = response;
+                        try {
+                            sharedPref.edit().putString(myDataSets.getJSONObject(names.getString(finalI)).getString("resource") + ".json", obj.toString()).apply();
+                            System.out.println(obj);
+                            Map<String, ?> prefsMap = sharedPref.getAll();
+                            for (Map.Entry<String, ?> entry: prefsMap.entrySet()) {
+                                Log.v("SharedPreferences", entry.getKey() + ":" +
+                                        entry.getValue().toString());
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        System.out.println("error onErrorResponse");
+                        System.out.println(error);
+                        error.printStackTrace();
+                    }
+                });
+
+                jr.setRetryPolicy(new RetryPolicy() {
+                    @Override
+                    public int getCurrentTimeout() {
+                        return 50000;
+                    }
+
+                    @Override
+                    public int getCurrentRetryCount() {
+                        return 50000;
+                    }
+
+                    @Override
+                    public void retry(VolleyError error) throws VolleyError {
+
+                    }
+                });
+
+                mRequestQueue.add(jr);
+            }
+        }
+
+
     }
 }

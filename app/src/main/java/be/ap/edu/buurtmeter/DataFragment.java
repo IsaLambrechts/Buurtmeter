@@ -86,7 +86,6 @@ public class DataFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view =  inflater.inflate(R.layout.fragment_data, container, false);
-
         sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         String dataSets = sharedPref.getString("dataSets", "{}");
         try {
@@ -129,6 +128,11 @@ public class DataFragment extends Fragment {
 
             DataAdapter dataAdapter = new DataAdapter(getActivity(), array);
             listView.setAdapter(dataAdapter);
+//            try {
+//                load("bibliotheek");
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//            }
 
         }
 
@@ -273,4 +277,60 @@ public class DataFragment extends Fragment {
             ((MainActivity) getActivity()).setTitle("Buurtmeter");
         }
     }
+
+//    private void load(String name) throws JSONException {
+//        String dataSets = sharedPref.getString("dataSets", "{}");
+//        System.out.println(dataSets);
+//        JSONObject myDataSets = new JSONObject(dataSets);
+//        JSONArray names = myDataSets.names();
+//
+//        for(int i = 0; i < names.length(); i++) {
+//            if(name.equals(myDataSets.getJSONObject(names.getString(i)).getString("type"))){
+//                if(myDataSets.getJSONObject(names.getString(i)).getBoolean("used")) {
+//                    if(!sharedPref.contains(myDataSets.getJSONObject(names.getString(i)).getString("resource") + ".json")) {
+//                        System.out.println("in if");
+//                        System.out.println(myDataSets.getJSONObject(names.getString(i)).getString("resource"));
+//                        mRequestQueue = Volley.newRequestQueue(getActivity());
+//                        String url = "http://datasets.antwerpen.be/v4/gis/";
+//                        final JSONObject sets = new JSONObject();
+//                        JsonObjectRequest jr = new JsonObjectRequest(url + myDataSets.getJSONObject(names.getString(i)).getString("resource") + ".json", new Response.Listener<JSONObject>() {
+//                            @Override
+//                            public void onResponse(JSONObject response) {
+//                                obj = response;
+//                                sharedPref.edit().putString(myDataSets.getJSONObject(names.getString(i)).getString("resource") + ".json", obj.toString()).apply();
+//                            }
+//                        }, new Response.ErrorListener() {
+//                            @Override
+//                            public void onErrorResponse(VolleyError error) {
+//                                System.out.println("error onErrorResponse");
+//                                System.out.println(error);
+//                                error.printStackTrace();
+//                            }
+//                        });
+//
+//                        jr.setRetryPolicy(new RetryPolicy() {
+//                            @Override
+//                            public int getCurrentTimeout() {
+//                                return 50000;
+//                            }
+//
+//                            @Override
+//                            public int getCurrentRetryCount() {
+//                                return 50000;
+//                            }
+//
+//                            @Override
+//                            public void retry(VolleyError error) throws VolleyError {
+//
+//                            }
+//                        });
+//
+//                        mRequestQueue.add(jr);
+//                    }
+//                }
+//            }
+//        }
+//
+//
+//    }
 }
