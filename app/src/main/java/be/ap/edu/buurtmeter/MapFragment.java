@@ -2,9 +2,12 @@ package be.ap.edu.buurtmeter;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
@@ -58,6 +61,9 @@ public class MapFragment extends Fragment {
 
     private SharedPreferences sharedPref = null;
     private String dataSets = "";
+    private ArrayList<Marker> myMarkers= new ArrayList<>();
+    private Bitmap bmp = null;
+
 
 
     public MapFragment() {
@@ -124,30 +130,42 @@ public class MapFragment extends Fragment {
             e.printStackTrace();
         }
 
-        mapView.setOnTouchListener((View v, MotionEvent event) -> {
+        mapView.setOnTouchListener((v, event) -> {
+            long LONG_CLICK = 1000L;
 
             if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getEventTime() - event.getDownTime() < LONG_CLICK) {
+                    int X = (int) event.getX();
+                    int Y = (int) event.getY();
 
-                Double[] coords = {4.104122829437256, 100.220808703284156};
-                Double[][] polyLoc = {{4.4033358456473,51.22758255433},{4.4034703234995,51.227582046742},{4.4035987670495,51.227590421318},{4.403891986069,51.227587825078},{4.4043671091547,51.227584138739},{4.4052564789258,51.227567503507},{4.4052396366633,51.227486379831},{4.4052188326158,51.227301873226},{4.4052142775621,51.227046883726},{4.4052126341747,51.226942691106},{4.4052107187617,51.226820476893},{4.4052032351956,51.226752662019},{4.4051763990275,51.226524698492},{4.4051334954029,51.226414748261},{4.4050735111994,51.226337008681},{4.404932670118,51.225997822659},{4.4048141024632,51.225728271398},{4.4047689376755,51.225635201864},{4.404849230603,51.225437657459},{4.4049040172207,51.225316378281},{4.4049316496089,51.225250475914},{4.4049534374109,51.225215504351},{4.4049874082081,51.22518218284},{4.4047616490268,51.225032030459},{4.4049989459234,51.224784902143},{4.4050492304226,51.224691856755},{4.4052179998964,51.224443122487},{4.4053287368647,51.224283220396},{4.4054114579518,51.224156440222},{4.405445728228,51.224123091505},{4.4056381279004,51.223858628435},{4.4059331728298,51.223436763666},{4.4061097134491,51.223162642326},{4.4059316709124,51.223103250344},{4.4059504072707,51.222855911089},{4.405950337694,51.222770296786},{4.4059230384202,51.222220504197},{4.4059539500091,51.22182569753},{4.4056115350473,51.221836215324},{4.405375774889,51.221834510266},{4.4051180384544,51.221826555711},{4.4050260876278,51.221807897644},{4.405055544185,51.221770874265},{4.4050720226658,51.221721298169},{4.4050913345453,51.221634868804},{4.405095198886,51.221472303663},{4.4051021093513,51.22141456011},{4.4051142775742,51.221362792185},{4.4051316167322,51.221315831422},{4.4051618070134,51.221266017306},{4.4052098053406,51.221183120326},{4.4052354891992,51.22097481538},{4.4052607594262,51.220535401105},{4.4052907932025,51.220057362135},{4.4052803629469,51.219900922482},{4.4052534304668,51.219709235539},{4.4052089760265,51.219423652347},{4.4051318407502,51.219041274359},{4.4050323251421,51.218482550945},{4.4048586788009,51.218401628661},{4.4048219626097,51.218323189361},{4.4047076221575,51.218216514615},{4.4044098727073,51.217876557488},{4.4041262938595,51.217551399138},{4.4040449554013,51.217474725914},{4.4039604870904,51.217459345477},{4.4035751577647,51.217382494194},{4.4031168156245,51.217428705528},{4.4026922414805,51.217464200014},{4.4025617748151,51.217469055942},{4.4024262973164,51.217530099666},{4.402120174986,51.217572460695},{4.4018286206559,51.217612974148},{4.4015522174057,51.21764635479},{4.4010124337083,51.217712822877},{4.4004936396882,51.217772154941},{4.4002925897595,51.217785980152},{4.4001233880607,51.217783958829},{4.3996448291794,51.217787377402},{4.3992631684816,51.217796476135},{4.39915907353,51.217815855584},{4.3990554223896,51.217835558406},{4.3987858561457,51.217889145691},{4.39865709284,51.21787490551},{4.3982816252291,51.217945228435},{4.3981573000221,51.217977294799},{4.3974076370392,51.218167740663},{4.3969797989347,51.218289135512},{4.3968927343719,51.218355742814},{4.3967715764833,51.218374800733},{4.3960559039442,51.218462959774},{4.3959152448685,51.218494443394},{4.3957908583414,51.218524862399},{4.3956967386069,51.218548344149},{4.3956015429037,51.21856770939},{4.3954917528172,51.21859475403},{4.3954084356824,51.218612938879},{4.3953519225298,51.218625275027},{4.3953933361928,51.218686665184},{4.3941734181506,51.218971738193},{4.3943409819746,51.21918406983},{4.394738488548,51.219756721126},{4.3953449576275,51.220640015549},{4.3957725532307,51.221271251386},{4.3959825916393,51.221588060516},{4.3961609731884,51.221860599985},{4.3969286307093,51.223026387884},{4.396929289768,51.223027385433},{4.3969294473771,51.223027637069},{4.3973861286978,51.223725553142},{4.3978522736028,51.22444967498},{4.3982412185513,51.2250608846},{4.3983824341472,51.225284784768},{4.3985682594129,51.225579995967},{4.3987990966322,51.225946167311},{4.3990123280173,51.226287642727},{4.3994106028616,51.226933280054},{4.399588192024,51.227223143568},{4.4009258086323,51.2268608089},{4.400968009442,51.226901172903},{4.4011507742367,51.227067604407},{4.4012000488543,51.227110393203},{4.4012455351216,51.227160328791},{4.4013213311376,51.227236402993},{4.4013971349224,51.22730297644},{4.4016812737321,51.227594442568},{4.4018548436323,51.227589539374},{4.4022520934613,51.227588562295},{4.40261504338,51.227587108537},{4.4033358456473,51.22758255433}};
-//                System.out.println(inPolygon(coords, polyLoc));
-                //do something
-                int X = (int) event.getX();
-                int Y = (int) event.getY();
+                    GeoPoint geoPoint = (GeoPoint) mapView.getProjection().fromPixels(X, Y);
+                    System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
+                    try {
+                        MapFragment.this.addMarker(geoPoint, mapView);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    return false;
+                } else if (event.getEventTime() - event.getDownTime() >= LONG_CLICK) {
+                    System.out.println("longclick");
+//                    mapView.getOverlays().clear();
+//                    mapView.invalidate();
 
-                GeoPoint geoPoint = (GeoPoint) mapView.getProjection().fromPixels(X, Y);
-                System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
-                try {
-                    addMarker(geoPoint, mapView);
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                    removeMarker(mapView);
+
+
+                    sharedPref.edit().putString("mapMarkers", "{}").apply();
                 }
-
-
             } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
                 return false;
+            } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                return true;
+            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                return false;
+            } else {
+                return true;
             }
-            return true;
+            return false;
         });
 
         try {
@@ -285,7 +303,7 @@ public class MapFragment extends Fragment {
             return;
         }
         Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if(location != null) {
+        if (location != null) {
             System.out.println("location: " + location.getLatitude());
         } else {
             System.out.println("location is null");
@@ -298,36 +316,36 @@ public class MapFragment extends Fragment {
     }
 
     private boolean inPolygon(Double[] location, Double[][] polyLoc) {
-        Double[] lastPoint = polyLoc[polyLoc.length-1];
+        Double[] lastPoint = polyLoc[polyLoc.length - 1];
         Boolean isInside = false;
         Double x = location[0];
 
-        for(int i = 0; i < polyLoc.length; i++) {
+        for (int i = 0; i < polyLoc.length; i++) {
             Double[] point = polyLoc[i];
             Double x1 = lastPoint[0];
             Double x2 = point[0];
             Double dx = x2 - x1;
 
-            if(Math.abs(dx) > 180.0) {
-                if(x > 0){
-                    while(x1 < 0)
+            if (Math.abs(dx) > 180.0) {
+                if (x > 0) {
+                    while (x1 < 0)
                         x1 += 360;
-                    while(x2 < 0)
+                    while (x2 < 0)
                         x2 += 360;
                 } else {
-                    while(x1 > 0)
+                    while (x1 > 0)
                         x1 -= 360;
-                    while(x2 > 0)
+                    while (x2 > 0)
                         x2 -= 360;
                 }
                 dx = x2 - x1;
             }
 
-            if((x1 <= x && x2 > x ) || (x1 >= x && x2 < x)) {
+            if ((x1 <= x && x2 > x) || (x1 >= x && x2 < x)) {
                 Double grad = (point[1] - lastPoint[1]) / dx;
                 Double intersectAtLat = lastPoint[1] + ((x - x1) * grad);
 
-                if(intersectAtLat > location[1])
+                if (intersectAtLat > location[1])
                     isInside = !isInside;
             }
             lastPoint = point;
@@ -339,26 +357,26 @@ public class MapFragment extends Fragment {
         // Calculate area score of position
         JSONObject myDataSets = new JSONObject(dataSets);
         System.out.println(myDataSets);
-        JSONArray keys = myDataSets.names ();
+        JSONArray keys = myDataSets.names();
         System.out.println(keys);
         JSONObject totalResult = new JSONObject();
         Double totalScore = 0.0;
-        for(int i = 0; i < keys.length(); i++) {
-            if(myDataSets.getJSONObject(keys.getString(i)).getBoolean("used")) {
+        for (int i = 0; i < keys.length(); i++) {
+            if (myDataSets.getJSONObject(keys.getString(i)).getBoolean("used")) {
                 Double tempScore = 0.0;
                 JSONObject set = new JSONObject(sharedPref.getString(myDataSets.getJSONObject(keys.getString(i)).getString("resource") + ".json", "{}"));
                 JSONArray setData = set.getJSONArray("data");
-                for(int j = 0; j < setData.length(); j++) {
+                for (int j = 0; j < setData.length(); j++) {
                     String geometry = setData.getJSONObject(j).getString("geometry");
                     JSONArray coords = new JSONObject(geometry).getJSONArray("coordinates").getJSONArray(0);
                     Double[][] coord = new Double[coords.length()][2];
-                    for(int k = 0; k < coords.length(); k++){
-                        for(int l = 0; l < coords.getJSONArray(k).length(); l++){
+                    for (int k = 0; k < coords.length(); k++) {
+                        for (int l = 0; l < coords.getJSONArray(k).length(); l++) {
                             coord[k][l] = coords.getJSONArray(k).getDouble(l);
                         }
                     }
 
-                    if(inPolygon(new Double[]{lng, lat}, coord)) {
+                    if (inPolygon(new Double[]{lng, lat}, coord)) {
                         tempScore += 1;
                     }
                 }
@@ -386,24 +404,24 @@ public class MapFragment extends Fragment {
         Double lng = geoPoint.getLongitude();
         JSONArray areas = new JSONArray(loadJSONFromAsset(getActivity()));
         System.out.println(areas);
-        for(int i = 0; i < areas.length(); i++) {
+        for (int i = 0; i < areas.length(); i++) {
             JSONObject geometry = new JSONObject(areas.getJSONObject(i).getString("geometry"));
             JSONArray coords = geometry.getJSONArray("coordinates").getJSONArray(0);
             Double[][] coord = new Double[coords.length()][2];
-            for(int k = 0; k < coords.length(); k++){
-                for(int l = 0; l < coords.getJSONArray(k).length(); l++){
+            for (int k = 0; k < coords.length(); k++) {
+                for (int l = 0; l < coords.getJSONArray(k).length(); l++) {
                     coord[k][l] = coords.getJSONArray(k).getDouble(l);
                 }
             }
-            if(inPolygon(new Double[]{lng, lat}, coord)) {
+            if (inPolygon(new Double[]{lng, lat}, coord)) {
                 JSONObject scores = getAreaScore(lat, lng);
                 String title = areas.getJSONObject(i).getString("wijknaam");
                 String description = "<div>Score: " + scores.getDouble("total") + "</div><br/>";
-                if(scores.getDouble("total") > 0) {
+                if (scores.getDouble("total") > 0) {
                     JSONArray jsonArray = scores.names();
-                    for(int j = 0; j < jsonArray.length(); j++) {
-                        if(jsonArray.get(j) != "total") {
-                            description += scores.getJSONObject(jsonArray.getString(j)).getString("name") + " : " +  scores.getJSONObject(jsonArray.getString(j)).getString("score") + "<br/>";
+                    for (int j = 0; j < jsonArray.length(); j++) {
+                        if (jsonArray.get(j) != "total") {
+                            description += scores.getJSONObject(jsonArray.getString(j)).getString("name") + " : " + scores.getJSONObject(jsonArray.getString(j)).getString("score") + "<br/>";
                         }
                     }
                 }
@@ -413,13 +431,18 @@ public class MapFragment extends Fragment {
                 startMarker.setIcon(getResources().getDrawable(R.drawable.marker));
                 startMarker.setTitle(title);
                 startMarker.setSubDescription(description);
+//                startMarker.showInfoWindow();
+//                startMarker.setRelatedObject(null);
+                MyCustomInfoWindow infoWindow = new MyCustomInfoWindow(R.layout.custom_info_window, mapView1, getActivity(), bmp);
+                startMarker.setImage(getResources().getDrawable(R.drawable.ic_home_black_24dp));
+                startMarker.setInfoWindow(infoWindow);
                 startMarker.showInfoWindow();
-                startMarker.setRelatedObject(null);
+
                 mapView1.getOverlays().add(startMarker);
                 mapView1.invalidate();
+                myMarkers.add(startMarker);
 
-
-                myMapmarkers.put("Marker" + markerCount, new JSONObject() );
+                myMapmarkers.put("Marker" + markerCount, new JSONObject());
                 myMapmarkers.getJSONObject("Marker" + markerCount).put("lat", geoPoint.getLatitude()).put("lng", geoPoint.getLongitude()).put("title", title).put("description", description);
                 System.out.println(myMapmarkers);
                 sharedPref.edit().putString("mapMarkers", myMapmarkers.toString()).apply();
@@ -429,10 +452,11 @@ public class MapFragment extends Fragment {
 
     private void loadMarkers(MapView mapView1) throws JSONException {
         String mapMarkers = sharedPref.getString("mapMarkers", "{}");
+        System.out.println(mapMarkers);
         JSONObject myMapMarkers = new JSONObject(mapMarkers);
         JSONArray markerNames = myMapMarkers.names();
         if (markerNames != null) {
-            for(int i = 0; i < markerNames.length(); i++) {
+            for (int i = 0; i < markerNames.length(); i++) {
                 Double lat = myMapMarkers.getJSONObject(markerNames.getString(i)).getDouble("lat");
                 Double lng = myMapMarkers.getJSONObject(markerNames.getString(i)).getDouble("lng");
                 String title = myMapMarkers.getJSONObject(markerNames.getString(i)).getString("title");
@@ -441,15 +465,35 @@ public class MapFragment extends Fragment {
                 Marker startMarker = new Marker(mapView1);
                 startMarker.setPosition(geoPoint);
                 startMarker.setIcon(getResources().getDrawable(R.drawable.marker));
-                startMarker.setTitle(title);
-                startMarker.setSubDescription(description);
-                startMarker.showInfoWindow();
-                startMarker.setRelatedObject(null);
+                //startMarker.setTitle(title);
+                //startMarker.setSubDescription(description);
+                //startMarker.showInfoWindow();
+                //startMarker.setInfoWindow(new MyCustomInfoWindow(mapView1));
+                //startMarker.setRelatedObject(null);
                 mapView1.getOverlays().add(startMarker);
                 mapView1.invalidate();
+                myMarkers.add(startMarker);
             }
         }
 
+    }
+
+    private void removeMarker(MapView mapView1) {
+        for(Marker m: myMarkers){
+            m.closeInfoWindow();
+            mapView1.getOverlays().remove(m);
+        }
+        mapView1.invalidate();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        System.out.println("result");
+        if(requestCode == 1313){
+            if(resultCode == Activity.RESULT_OK) {
+                bmp = (Bitmap) data.getExtras().get("data");
+            }
+        }
     }
 
 }
