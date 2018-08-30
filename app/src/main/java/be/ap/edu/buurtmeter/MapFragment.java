@@ -133,17 +133,41 @@ public class MapFragment extends Fragment {
                 case MotionEvent.ACTION_UP:
                     if (isOnClick) {
                         if (event.getEventTime() - event.getDownTime() < LONG_CLICK) {
-                            Log.i("e", "onClick ");
-                            //TODO onClick code
                             int X = (int) event.getX();
                             int Y = (int) event.getY();
-
                             GeoPoint geoPoint = (GeoPoint) mapView.getProjection().fromPixels(X, Y);
-                            System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
-                            try {
-                                MapFragment.this.addMarker(geoPoint, mapView);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
+                            Boolean openWindow = false;
+                            if(myMarkers.size() > 0) {
+                                System.out.println(myMarkers.size());
+                                for(Marker marker: myMarkers) {
+                                    if (geoPoint == marker.getPosition() || (geoPoint.getLongitude() + 0.0005 > marker.getPosition().getLongitude() && geoPoint.getLongitude() - 0.0005 < marker.getPosition().getLongitude())
+                                            && (geoPoint.getLatitude() + 0.0005 > marker.getPosition().getLatitude() && geoPoint.getLatitude() - 0.0005 < marker.getPosition().getLatitude())) {
+                                        System.out.println("marker");
+                                        marker.setInfoWindow(new MyCustomInfoWindow(R.layout.custom_info_window, mapView, getActivity()));
+                                        marker.showInfoWindow();
+                                        openWindow = true;
+                                    }
+                                }
+                                if(!openWindow) {
+                                    System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
+                                    try {
+                                        MapFragment.this.addMarker(geoPoint, mapView);
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                            }
+                            else {
+                                Log.i("e", "onClick ");
+                                //TODO onClick code
+
+                                System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
+                                try {
+                                    MapFragment.this.addMarker(geoPoint, mapView);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }else {
                             Log.i("e", "LongClick");
@@ -208,7 +232,7 @@ public class MapFragment extends Fragment {
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
-            
+
         }
     }
 
@@ -440,10 +464,12 @@ public class MapFragment extends Fragment {
         JSONArray markerNames = myMapMarkers.names();
         if (markerNames != null) {
             for (int i = 0; i < markerNames.length(); i++) {
+                System.out.println(myMapMarkers);
                 Double lat = myMapMarkers.getJSONObject(markerNames.getString(i)).getDouble("lat");
                 Double lng = myMapMarkers.getJSONObject(markerNames.getString(i)).getDouble("lng");
                 String title = myMapMarkers.getJSONObject(markerNames.getString(i)).getString("title");
                 String description = myMapMarkers.getJSONObject(markerNames.getString(i)).getString("description");
+
                 GeoPoint geoPoint = new GeoPoint(lat, lng);
                 Marker startMarker = new Marker(mapView1);
                 startMarker.setPosition(geoPoint);
@@ -463,6 +489,7 @@ public class MapFragment extends Fragment {
             m.closeInfoWindow();
             mapView1.getOverlays().remove(m);
         }
+        myMarkers.clear();
         mapView1.invalidate();
     }
 
