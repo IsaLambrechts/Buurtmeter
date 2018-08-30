@@ -45,9 +45,8 @@ public class MyCustomInfoWindow extends MarkerInfoWindow {
     public static void activityResult(int requestCode, int resultCode, Intent data){
 
         System.out.println("activity");
-        if(requestCode == 1313){
+        if(requestCode == CAM_REQUEST){
             if(resultCode == Activity.RESULT_OK) {
-                System.out.println("ok");
                Bitmap bmp = (Bitmap) data.getExtras().get("data");
                imageView.setImageBitmap(bmp);
             }

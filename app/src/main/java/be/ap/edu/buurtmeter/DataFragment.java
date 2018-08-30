@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -43,6 +42,9 @@ public class DataFragment extends Fragment {
     private RequestQueue mRequestQueue;
     private JSONObject obj = new JSONObject();
     private SharedPreferences sharedPref = null;
+    private DataAdapter dataAdapter;
+    private TextView dataSetID;
+    private ListView listView;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -84,7 +86,9 @@ public class DataFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view =  inflater.inflate(R.layout.fragment_data, container, false);
+        View view = inflater.inflate(R.layout.fragment_data, container, false);
+        dataSetID = view.findViewById(R.id.textView);
+        listView = view.findViewById(R.id.listview);
         sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         String dataSets = sharedPref.getString("dataSets", "{}");
         try {
@@ -92,10 +96,12 @@ public class DataFragment extends Fragment {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        saveData(obj);
+        if (obj.length() == 0) {
+            saveData();
+        } else {
+            ((MainActivity) getActivity()).setTitle("Buurtmeter");
+        }
 
-        TextView dataSetID = view.findViewById(R.id.textView);
-        ListView listView = view.findViewById(R.id.listview);
         try {
             String size = sharedPref.getString("dataSets", "{}");
             JSONObject json = new JSONObject(size);
@@ -105,23 +111,16 @@ public class DataFragment extends Fragment {
         }
 
         ArrayList<Data> array = new ArrayList<>();
-        if(obj.length() > 0) {
-            JSONArray names = obj.names();
-            for (int i = 0; i < names.length(); i++) {
-                try {
-                    String type = obj.getJSONObject(names.getString(i)).getString("type");
-                    Boolean used = obj.getJSONObject(names.getString(i)).getBoolean("used");
-                    int amount = obj.getJSONObject(names.getString(i)).getInt("range");
-                    array.add(new Data(type, amount, used));
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            DataAdapter dataAdapter = new DataAdapter(getActivity(), array);
-            listView.setAdapter(dataAdapter);
+        if (obj.length() > 0) {
+            array = loadArrayList(obj);
 
         }
+        dataAdapter = new DataAdapter(getActivity(), array);
+        listView.setAdapter(dataAdapter);
+
+
+
+        view.invalidate();
 
 
         return view;
@@ -140,7 +139,7 @@ public class DataFragment extends Fragment {
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
-            Toast.makeText(context, "Data fragment attached", Toast.LENGTH_SHORT).show();
+
         }
     }
 
@@ -165,103 +164,129 @@ public class DataFragment extends Fragment {
         void onFragmentInteraction(Uri uri);
     }
 
-    public void saveData(JSONObject jsonObject) {
-        if(jsonObject.length() == 0) {
-            ((MainActivity) getActivity()).setTitle("Ophalen Data...");
-            String url = "http://datasets.antwerpen.be/v1/opendata/statistieken.json";
+    public void saveData() {
 
-            mRequestQueue = Volley.newRequestQueue(getActivity());
+        ((MainActivity) getActivity()).setTitle("Ophalen Data...");
+        String url = "http://datasets.antwerpen.be/v1/opendata/statistieken.json";
 
-            final JSONObject sets = new JSONObject();
-            JsonObjectRequest jr = new JsonObjectRequest(url, new Response.Listener<JSONObject>() {
-                @Override
-                public void onResponse(JSONObject response) {
-                    obj = response;
-                    JSONArray statistics = new JSONArray();
+        mRequestQueue = Volley.newRequestQueue(getActivity());
+
+        final JSONObject sets = new JSONObject();
+        JsonObjectRequest jr = new JsonObjectRequest(url, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
+                // obj = response;
+                JSONArray statistics = new JSONArray();
+                try {
+                    statistics = response.getJSONArray("statistieken");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                for (int i = 0; i < statistics.length(); i++) {
                     try {
-                        statistics = obj.getJSONArray("statistieken");
+                        if (statistics.getJSONObject(i).getString("package").equals("geografie")) {
+                            final JSONArray finalStatistics = statistics;
+                            final int finalI = i;
+                            JSONArray finalStatistics1 = statistics;
+                            int finalI1 = i;
+                            JsonObjectRequest jsonr = new JsonObjectRequest("http://datasets.antwerpen.be/v4/gis/" + statistics.getJSONObject(i).getString("resource") + ".json", new Response.Listener<JSONObject>() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    try {
+                                        JSONObject geo;
+                                        if ((response.getJSONArray("data").length() > 0) && (response.getJSONArray("data").getJSONObject(0).has("geometry")) && ((geo = new JSONObject(response.getJSONArray("data").getJSONObject(0).getString("geometry"))).length() > 0)) {
+                                            if (geo.getString("type").equals("Polygon")) {
+                                                String fileName = finalStatistics.getJSONObject(finalI).getString("resource") + ".json";
+                                                String resource = finalStatistics.getJSONObject(finalI).getString("resource");
+                                                String type = "";
+                                                if ((response.getJSONArray("data").getJSONObject(0).has("type")) && (response.getJSONArray("data").getJSONObject(0).getString("type").length() > 0)) {
+                                                    type = response.getJSONArray("data").getJSONObject(0).getString("type");
+                                                } else {
+                                                    type = resource;
+                                                }
+
+                                                JSONObject set = new JSONObject("{\"used\":" + false + ", \"range\":" + 5 + ", \"resource\":\"" + resource + "\", \"type\": \"" + type + "\"}");
+                                                sets.put(set.getString("resource"), set);
+
+                                                SharedPreferences.Editor editor = sharedPref.edit();
+                                                editor.putString("dataSets", String.valueOf(sets));
+                                                editor.apply();
+
+                                                try {
+                                                    if (finalStatistics1.getJSONObject(finalI1).equals(finalStatistics1.getJSONObject(finalStatistics1.length() - 1))) {
+                                                        ((MainActivity) getActivity()).setTitle("Buurtmeter");
+                                                        ArrayList<Data> listArray = loadArrayList(sets);
+                                                        dataAdapter = new DataAdapter(getActivity(), listArray);
+                                                        listView.setAdapter(dataAdapter);
+                                                        dataAdapter.notifyDataSetChanged();
+                                                        dataSetID.setText(String.format("Datasets (%d)", listArray.size()));
+                                                    }
+                                                } catch (JSONException e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }, new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    error.printStackTrace();
+                                }
+                            });
+                            mRequestQueue.add(jsonr);
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    for (int i = 0; i < statistics.length(); i++) {
-                        try {
-                            if (statistics.getJSONObject(i).getString("package").equals("geografie")) {
-                                final JSONArray finalStatistics = statistics;
-                                final int finalI = i;
-                                JsonObjectRequest jsonr = new JsonObjectRequest("http://datasets.antwerpen.be/v4/gis/" + statistics.getJSONObject(i).getString("resource") + ".json", new Response.Listener<JSONObject>() {
-                                    @Override
-                                    public void onResponse(JSONObject response) {
-                                        try {
-                                            JSONObject geo;
-                                            if ((response.getJSONArray("data").length() > 0) && (response.getJSONArray("data").getJSONObject(0).has("geometry")) && ((geo = new JSONObject(response.getJSONArray("data").getJSONObject(0).getString("geometry"))).length() > 0)) {
-                                                if (geo.getString("type").equals("Polygon")) {
-                                                    String fileName = finalStatistics.getJSONObject(finalI).getString("resource") + ".json";
-                                                    String resource = finalStatistics.getJSONObject(finalI).getString("resource");
-                                                    String type = "";
-                                                    if ((response.getJSONArray("data").getJSONObject(0).has("type")) && (response.getJSONArray("data").getJSONObject(0).getString("type").length() > 0)) {
-                                                        type = response.getJSONArray("data").getJSONObject(0).getString("type");
-                                                    } else {
-                                                        type = resource;
-                                                    }
-
-                                                    JSONObject set = new JSONObject("{\"used\":" + false + ", \"range\":" + 5 + ", \"resource\":\"" + resource + "\", \"type\": \"" + type + "\"}");
-                                                    sets.put(set.getString("resource"), set);
-
-                                                    SharedPreferences.Editor editor = sharedPref.edit();
-                                                    editor.putString("dataSets", String.valueOf(sets));
-                                                    editor.apply();
-                                                }
-                                            }
-                                        } catch (JSONException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                }, new Response.ErrorListener() {
-                                    @Override
-                                    public void onErrorResponse(VolleyError error) {
-                                        System.out.println("error onErrorResponse");
-                                        System.out.println(error);
-                                        error.printStackTrace();
-                                    }
-                                });
-                                mRequestQueue.add(jsonr);
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-
-                }
-            }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    System.out.println("error onErrorResponse");
-                    System.out.println(error);
-                    error.printStackTrace();
-                }
-            });
-
-            jr.setRetryPolicy(new RetryPolicy() {
-                @Override
-                public int getCurrentTimeout() {
-                    return 50000;
                 }
 
-                @Override
-                public int getCurrentRetryCount() {
-                    return 50000;
-                }
 
-                @Override
-                public void retry(VolleyError error) throws VolleyError {
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                System.out.println("error onErrorResponse");
+                System.out.println(error);
+                error.printStackTrace();
+            }
+        });
 
-                }
-            });
+        jr.setRetryPolicy(new RetryPolicy() {
+            @Override
+            public int getCurrentTimeout() {
+                return 50000;
+            }
 
-            mRequestQueue.add(jr);
-        } else {
-            ((MainActivity) getActivity()).setTitle("Buurtmeter");
+            @Override
+            public int getCurrentRetryCount() {
+                return 50000;
+            }
+
+            @Override
+            public void retry(VolleyError error) throws VolleyError {
+
+            }
+        });
+        mRequestQueue.add(jr);
+
+    }
+
+    private ArrayList<Data> loadArrayList(JSONObject sets) {
+        ArrayList<Data> array = new ArrayList<>();
+        JSONArray names = sets.names();
+        for (int i = 0; i < names.length(); i++) {
+            try {
+                String type = sets.getJSONObject(names.getString(i)).getString("type");
+                Boolean used = sets.getJSONObject(names.getString(i)).getBoolean("used");
+                int amount = sets.getJSONObject(names.getString(i)).getInt("range");
+                array.add(new Data(type, amount, used));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
+        return array;
     }
 }
