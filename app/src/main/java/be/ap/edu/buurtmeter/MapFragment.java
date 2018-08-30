@@ -5,9 +5,12 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -25,6 +28,7 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polygon;
+import org.osmdroid.views.overlay.infowindow.InfoWindow;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -131,6 +135,7 @@ public class MapFragment extends Fragment {
                     break;
                 case MotionEvent.ACTION_CANCEL:
                 case MotionEvent.ACTION_UP:
+                    InfoWindow.closeAllInfoWindowsOn(mapView);
                     if (isOnClick) {
                         if (event.getEventTime() - event.getDownTime() < LONG_CLICK) {
                             int X = (int) event.getX();
@@ -138,18 +143,15 @@ public class MapFragment extends Fragment {
                             GeoPoint geoPoint = (GeoPoint) mapView.getProjection().fromPixels(X, Y);
                             Boolean openWindow = false;
                             if(myMarkers.size() > 0) {
-                                System.out.println(myMarkers.size());
                                 for(Marker marker: myMarkers) {
                                     if (geoPoint == marker.getPosition() || (geoPoint.getLongitude() + 0.0005 > marker.getPosition().getLongitude() && geoPoint.getLongitude() - 0.0005 < marker.getPosition().getLongitude())
                                             && (geoPoint.getLatitude() + 0.0005 > marker.getPosition().getLatitude() && geoPoint.getLatitude() - 0.0005 < marker.getPosition().getLatitude())) {
-                                        System.out.println("marker");
                                         marker.setInfoWindow(new MyCustomInfoWindow(R.layout.custom_info_window, mapView, getActivity()));
                                         marker.showInfoWindow();
                                         openWindow = true;
                                     }
                                 }
                                 if(!openWindow) {
-                                    System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
                                     try {
                                         MapFragment.this.addMarker(geoPoint, mapView);
                                     } catch (JSONException e) {
@@ -159,10 +161,6 @@ public class MapFragment extends Fragment {
 
                             }
                             else {
-                                Log.i("e", "onClick ");
-                                //TODO onClick code
-
-                                System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
                                 try {
                                     MapFragment.this.addMarker(geoPoint, mapView);
                                 } catch (JSONException e) {
@@ -170,7 +168,6 @@ public class MapFragment extends Fragment {
                                 }
                             }
                         }else {
-                            Log.i("e", "LongClick");
                             removeMarker(mapView);
                             sharedPref.edit().putString("mapMarkers", "{}").apply();
                         }
@@ -308,30 +305,6 @@ public class MapFragment extends Fragment {
 
     }
 
-
-//    private void locate() {
-//        LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
-//
-//        checkPermissions();
-//        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            // TODO: Consider calling
-//            //    ActivityCompat#requestPermissions
-//            // here to request the missing permissions, and then overriding
-//            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-//            //                                          int[] grantResults)
-//            // to handle the case where the user grants the permission. See the documentation
-//            // for ActivityCompat#requestPermissions for more details.
-//            return;
-//        }
-//        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-//        if (location != null) {
-//            System.out.println("location: " + location.getLatitude());
-//        } else {
-//            System.out.println("location is null");
-//        }
-//
-//    }
-
     private boolean inPolygon(Double[] location, Double[][] polyLoc) {
         Double[] lastPoint = polyLoc[polyLoc.length - 1];
         Boolean isInside = false;
@@ -415,7 +388,6 @@ public class MapFragment extends Fragment {
         Double lat = geoPoint.getLatitude();
         Double lng = geoPoint.getLongitude();
         JSONArray areas = new JSONArray(loadJSONFromAsset(getActivity()));
-        System.out.println(areas);
         for (int i = 0; i < areas.length(); i++) {
             JSONObject geometry = new JSONObject(areas.getJSONObject(i).getString("geometry"));
             JSONArray coords = geometry.getJSONArray("coordinates").getJSONArray(0);
@@ -464,7 +436,6 @@ public class MapFragment extends Fragment {
         JSONArray markerNames = myMapMarkers.names();
         if (markerNames != null) {
             for (int i = 0; i < markerNames.length(); i++) {
-                System.out.println(myMapMarkers);
                 Double lat = myMapMarkers.getJSONObject(markerNames.getString(i)).getDouble("lat");
                 Double lng = myMapMarkers.getJSONObject(markerNames.getString(i)).getDouble("lng");
                 String title = myMapMarkers.getJSONObject(markerNames.getString(i)).getString("title");
@@ -491,6 +462,25 @@ public class MapFragment extends Fragment {
         }
         myMarkers.clear();
         mapView1.invalidate();
+    }
+
+    private void locate() throws JSONException {
+        LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+        List<String> permissions = new ArrayList<>();
+        String message = "osmdroid permissions:";
+        checkPermissions();
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+            message += "\nLocation to show user location.";
+            return;
+        }
+        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if (location != null) {
+            sharedPref.edit().putString("center", (new JSONObject().put("lat", location.getLatitude()).put("lng", location.getLongitude())).toString()).apply();
+        } else {
+            System.out.println("location is null");
+        }
+
     }
 
 
