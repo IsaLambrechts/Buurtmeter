@@ -2,20 +2,15 @@ package be.ap.edu.buurtmeter;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.location.Location;
-import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -46,12 +41,9 @@ import java.util.List;
  * create an instance of this fragment.
  */
 public class MapFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
@@ -62,7 +54,12 @@ public class MapFragment extends Fragment {
     private SharedPreferences sharedPref = null;
     private String dataSets = "";
     private ArrayList<Marker> myMarkers= new ArrayList<>();
-    private Bitmap bmp = null;
+
+    private float mDownX;
+    private float mDownY;
+    private final float SCROLL_THRESHOLD = 10;
+    private boolean isOnClick;
+
 
 
 
@@ -101,21 +98,14 @@ public class MapFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_map, container, false);
         if (Build.VERSION.SDK_INT >= 23) {
             checkPermissions();
         }
         sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         dataSets = sharedPref.getString("dataSets", "{}");
-//        try {
-//            getAreaScore(51.21771754098431, 4.413907527923584);
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
 
 
-        // https://github.com/osmdroid/osmdroid/wiki/How-to-use-the-osmdroid-library
         mapView = (MapView) view.findViewById(R.id.mapview);
         mapView.setTileSource(TileSourceFactory.HIKEBIKEMAP);
         mapView.setBuiltInZoomControls(true);
@@ -133,39 +123,46 @@ public class MapFragment extends Fragment {
         mapView.setOnTouchListener((v, event) -> {
             long LONG_CLICK = 1000L;
 
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (event.getEventTime() - event.getDownTime() < LONG_CLICK) {
-                    int X = (int) event.getX();
-                    int Y = (int) event.getY();
+            switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                case MotionEvent.ACTION_DOWN:
+                    mDownX = event.getX();
+                    mDownY = event.getY();
+                    isOnClick = true;
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_UP:
+                    if (isOnClick) {
+                        if (event.getEventTime() - event.getDownTime() < LONG_CLICK) {
+                            Log.i("e", "onClick ");
+                            //TODO onClick code
+                            int X = (int) event.getX();
+                            int Y = (int) event.getY();
 
-                    GeoPoint geoPoint = (GeoPoint) mapView.getProjection().fromPixels(X, Y);
-                    System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
-                    try {
-                        MapFragment.this.addMarker(geoPoint, mapView);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                            GeoPoint geoPoint = (GeoPoint) mapView.getProjection().fromPixels(X, Y);
+                            System.out.println(geoPoint.getLatitude() + " " + geoPoint.getLongitude());
+                            try {
+                                MapFragment.this.addMarker(geoPoint, mapView);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }else {
+                            Log.i("e", "LongClick");
+                            removeMarker(mapView);
+                            sharedPref.edit().putString("mapMarkers", "{}").apply();
+                        }
                     }
-                    return false;
-                } else if (event.getEventTime() - event.getDownTime() >= LONG_CLICK) {
-                    System.out.println("longclick");
-//                    mapView.getOverlays().clear();
-//                    mapView.invalidate();
-
-                    removeMarker(mapView);
-
-
-                    sharedPref.edit().putString("mapMarkers", "{}").apply();
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                return false;
-            } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                return true;
-            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                return false;
-            } else {
-                return true;
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (isOnClick && (Math.abs(mDownX - event.getX()) > SCROLL_THRESHOLD || Math.abs(mDownY - event.getY()) > SCROLL_THRESHOLD)) {
+                        Log.i("e", "movement detected");
+                        isOnClick = false;
+                        return false;
+                    }
+                    break;
+                default:
+                    break;
             }
-            return false;
+            return true;
         });
 
         try {
@@ -288,32 +285,28 @@ public class MapFragment extends Fragment {
     }
 
 
-    private void locate() {
-        LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
-
-        checkPermissions();
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location != null) {
-            System.out.println("location: " + location.getLatitude());
-        } else {
-            System.out.println("location is null");
-        }
-//        double longitude = location.getLongitude();
-//        double latitude = location.getLatitude();
+//    private void locate() {
+//        LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
 //
-//        System.out.println(longitude + latitude);
-
-    }
+//        checkPermissions();
+//        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            // TODO: Consider calling
+//            //    ActivityCompat#requestPermissions
+//            // here to request the missing permissions, and then overriding
+//            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//            //                                          int[] grantResults)
+//            // to handle the case where the user grants the permission. See the documentation
+//            // for ActivityCompat#requestPermissions for more details.
+//            return;
+//        }
+//        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+//        if (location != null) {
+//            System.out.println("location: " + location.getLatitude());
+//        } else {
+//            System.out.println("location is null");
+//        }
+//
+//    }
 
     private boolean inPolygon(Double[] location, Double[][] polyLoc) {
         Double[] lastPoint = polyLoc[polyLoc.length - 1];
@@ -354,11 +347,8 @@ public class MapFragment extends Fragment {
     }
 
     private JSONObject getAreaScore(Double lat, Double lng) throws JSONException {
-        // Calculate area score of position
         JSONObject myDataSets = new JSONObject(dataSets);
-        System.out.println(myDataSets);
         JSONArray keys = myDataSets.names();
-        System.out.println(keys);
         JSONObject totalResult = new JSONObject();
         Double totalScore = 0.0;
         for (int i = 0; i < keys.length(); i++) {
@@ -388,12 +378,10 @@ public class MapFragment extends Fragment {
             }
         }
         totalResult.put("total", totalScore);
-        System.out.println(totalResult);
         return totalResult;
     }
 
     private void addMarker(GeoPoint geoPoint, MapView mapView1) throws JSONException {
-        // add marker to your map
         String mapMarkers = sharedPref.getString("mapMarkers", "{}");
         JSONObject myMapmarkers = new JSONObject(mapMarkers);
         JSONArray markerNames = myMapmarkers.names();
@@ -416,7 +404,7 @@ public class MapFragment extends Fragment {
             if (inPolygon(new Double[]{lng, lat}, coord)) {
                 JSONObject scores = getAreaScore(lat, lng);
                 String title = areas.getJSONObject(i).getString("wijknaam");
-                String description = "<div>Score: " + scores.getDouble("total") + "</div><br/>";
+                String description = "Score: " + scores.getDouble("total") + "<br/>";
                 if (scores.getDouble("total") > 0) {
                     JSONArray jsonArray = scores.names();
                     for (int j = 0; j < jsonArray.length(); j++) {
@@ -431,10 +419,7 @@ public class MapFragment extends Fragment {
                 startMarker.setIcon(getResources().getDrawable(R.drawable.marker));
                 startMarker.setTitle(title);
                 startMarker.setSubDescription(description);
-//                startMarker.showInfoWindow();
-//                startMarker.setRelatedObject(null);
-                MyCustomInfoWindow infoWindow = new MyCustomInfoWindow(R.layout.custom_info_window, mapView1, getActivity(), bmp);
-                startMarker.setImage(getResources().getDrawable(R.drawable.ic_home_black_24dp));
+                MyCustomInfoWindow infoWindow = new MyCustomInfoWindow(R.layout.custom_info_window, mapView1, getActivity());
                 startMarker.setInfoWindow(infoWindow);
                 startMarker.showInfoWindow();
 
@@ -444,7 +429,6 @@ public class MapFragment extends Fragment {
 
                 myMapmarkers.put("Marker" + markerCount, new JSONObject());
                 myMapmarkers.getJSONObject("Marker" + markerCount).put("lat", geoPoint.getLatitude()).put("lng", geoPoint.getLongitude()).put("title", title).put("description", description);
-                System.out.println(myMapmarkers);
                 sharedPref.edit().putString("mapMarkers", myMapmarkers.toString()).apply();
             }
         }
@@ -452,7 +436,6 @@ public class MapFragment extends Fragment {
 
     private void loadMarkers(MapView mapView1) throws JSONException {
         String mapMarkers = sharedPref.getString("mapMarkers", "{}");
-        System.out.println(mapMarkers);
         JSONObject myMapMarkers = new JSONObject(mapMarkers);
         JSONArray markerNames = myMapMarkers.names();
         if (markerNames != null) {
@@ -465,11 +448,8 @@ public class MapFragment extends Fragment {
                 Marker startMarker = new Marker(mapView1);
                 startMarker.setPosition(geoPoint);
                 startMarker.setIcon(getResources().getDrawable(R.drawable.marker));
-                //startMarker.setTitle(title);
-                //startMarker.setSubDescription(description);
-                //startMarker.showInfoWindow();
-                //startMarker.setInfoWindow(new MyCustomInfoWindow(mapView1));
-                //startMarker.setRelatedObject(null);
+                startMarker.setTitle(title);
+                startMarker.setSubDescription(description);
                 mapView1.getOverlays().add(startMarker);
                 mapView1.invalidate();
                 myMarkers.add(startMarker);
@@ -486,14 +466,5 @@ public class MapFragment extends Fragment {
         mapView1.invalidate();
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        System.out.println("result");
-        if(requestCode == 1313){
-            if(resultCode == Activity.RESULT_OK) {
-                bmp = (Bitmap) data.getExtras().get("data");
-            }
-        }
-    }
 
 }

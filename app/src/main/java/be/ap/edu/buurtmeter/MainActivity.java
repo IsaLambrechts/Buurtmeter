@@ -38,38 +38,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        if (Build.VERSION.SDK_INT >= 23) {
-//            checkPermissions();
-//        }
         setContentView(R.layout.activity_main);
 
-//        // https://github.com/osmdroid/osmdroid/wiki/How-to-use-the-osmdroid-library
-//        mapView = (MapView) findViewById(R.id.mapview);
-//        mapView.setTileSource(TileSourceFactory.HIKEBIKEMAP);
-//        mapView.setBuiltInZoomControls(true);
-//        mapView.setMultiTouchControls(true);
-//        mapView.getController().setZoom(16.0);
-//        // default = meistraat
-//
-//        mapView.getController().setCenter(new GeoPoint(51.2164348, 4.4112339));
-//
-//        List<GeoPoint> geoPoints = new ArrayList<>();
-////add your points here
-//        geoPoints.add(new GeoPoint(51.2164348, 4.4112339));
-//        geoPoints.add(new GeoPoint(51.229857372061, 4.4242370563038));
-//        geoPoints.add(new GeoPoint(51.229829165066, 4.4244103034827));
-//        Polygon polygon = new Polygon();    //see note below
-//        polygon.setFillColor(Color.argb(75, 255,0,0));
-//        geoPoints.add(geoPoints.get(0));    //forces the loop to close
-//        polygon.setPoints(geoPoints);
-//        polygon.setTitle("A sample polygon");
-//
-////polygons supports holes too, points should be in a counter-clockwise order
-//        List<List<GeoPoint>> holes = new ArrayList<>();
-//        holes.add(geoPoints);
-//        polygon.setHoles(holes);
-//
-//        mapView.getOverlayManager().add(polygon);
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);

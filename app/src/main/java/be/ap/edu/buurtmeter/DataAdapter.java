@@ -50,6 +50,7 @@ public class DataAdapter extends BaseAdapter {
     @Override
     public Data getItem(int position) {
         return mDataSource.get(position);
+
     }
 
     //3
@@ -79,9 +80,11 @@ public class DataAdapter extends BaseAdapter {
         SeekBar seekBar =
                 (SeekBar) rowView.findViewById(R.id.seekBar);
 
-        dataText.setText(getItem(position).getName());
-        checkBox.setChecked(getItem(position).getChecked());
-        seekBar.setProgress(getItem(position).getAmount());
+
+        dataText.setText(mDataSource.get(position).getName());
+        checkBox.setChecked(mDataSource.get(position).getChecked());
+        seekBar.setProgress(mDataSource.get(position).getAmount());
+
 
 
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -91,20 +94,11 @@ public class DataAdapter extends BaseAdapter {
                     JSONObject myDataSets = new JSONObject(dataSets);
                     JSONArray names = myDataSets.names();
                     SharedPreferences.Editor editor = sharedPref.edit();
-                    for(int i = 0; i < names.length(); i++) {
-                        if(dataText.getText().equals(myDataSets.getJSONObject(names.getString(i)).getString("type"))) {
-                            myDataSets.getJSONObject(names.getString(i)).put("used", checkBox.isChecked());
-                            System.out.println(myDataSets.getJSONObject(names.getString(i)));
-                            System.out.println(myDataSets);
 
-                            editor.putString("dataSets", String.valueOf(myDataSets));
-                            editor.apply();
-
-                            load(dataText.getText().toString(), i);
-                        }
-                    }
+                    myDataSets.getJSONObject(names.getString(position)).put("used", checkBox.isChecked());
                     editor.putString("dataSets", String.valueOf(myDataSets));
                     editor.apply();
+                    load(dataText.getText().toString(), position);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -119,11 +113,7 @@ public class DataAdapter extends BaseAdapter {
                     JSONObject myDataSets = new JSONObject(dataSets);
                     JSONArray names = myDataSets.names();
                     SharedPreferences.Editor editor = sharedPref.edit();
-                    for(int j = 0; j < names.length(); j++) {
-                        if(dataText.getText().equals(myDataSets.getJSONObject(names.getString(j)).getString("type"))) {
-                            myDataSets.getJSONObject(names.getString(j)).put("range", seekBar.getProgress());
-                        }
-                    }
+                    myDataSets.getJSONObject(names.getString(position)).put("range", seekBar.getProgress());
                     editor.putString("dataSets", String.valueOf(myDataSets));
                     editor.apply();
                 } catch (JSONException e) {

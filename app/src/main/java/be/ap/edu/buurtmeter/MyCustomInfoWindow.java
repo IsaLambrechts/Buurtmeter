@@ -19,25 +19,12 @@ public class MyCustomInfoWindow extends MarkerInfoWindow {
 
     private static final int CAM_REQUEST=1313;
     private static ImageView imageView;
-    /**
-     * @param layoutResId layout that must contain these ids: bubble_title,bubble_description,
-     *                    bubble_subdescription, bubble_image
-     * @param mapView
-     */
-    public MyCustomInfoWindow(int layoutResId, MapView mapView, Activity activity, Bitmap image) {
+
+    public MyCustomInfoWindow(int layoutResId, MapView mapView, Activity activity) {
         super(layoutResId, mapView);
         TextView txtView = mView.findViewById(R.id.title);
         TextView description = mView.findViewById(R.id.bubble_description);
-        //Button btn = (Button)(mView.findViewById(R.id.addPicture));
         imageView = (ImageView) mView.findViewById(R.id.bubble_image);
-//        btn.setOnClickListener(new View.OnClickListener() {
-//            public void onClick(View view) {
-//                Toast.makeText(view.getContext(), "Button clicked", Toast.LENGTH_LONG).show();
-//                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//                startActivityForResult(activity, intent,CAM_REQUEST, new Bundle());
-//                // Show picture in marker
-//            }
-//        });
 
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -48,18 +35,6 @@ public class MyCustomInfoWindow extends MarkerInfoWindow {
         });
 
     }
-
-//    public MyCustomInfoWindow(MapView mapView) {
-//        super(R.layout.bonuspack_bubble, mapView);
-//        TextView txtView = mView.findViewById(R.id.title);
-//        TextView description = mView.findViewById(R.id.bubble_subdescription);
-//        Button btn = (Button)(mView.findViewById(R.id.bubble_moreinfo));
-//        btn.setOnClickListener(new View.OnClickListener() {
-//            public void onClick(View view) {
-//                Toast.makeText(view.getContext(), "Button clicked", Toast.LENGTH_LONG).show();
-//            }
-//        });
-//    }
 
     @Override
     public void onOpen(Object item){
