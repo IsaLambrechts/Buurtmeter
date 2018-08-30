@@ -137,15 +137,12 @@ public class DataAdapter extends BaseAdapter {
 
     private void load(String name, int i) throws JSONException {
         String dataSets = sharedPref.getString("dataSets", "{}");
-        System.out.println(dataSets);
         JSONObject myDataSets = new JSONObject(dataSets);
         JSONArray names = myDataSets.names();
 
 
         if (myDataSets.getJSONObject(names.getString(i)).getBoolean("used")) {
             if (!sharedPref.contains(myDataSets.getJSONObject(names.getString(i)).getString("resource") + ".json")) {
-                System.out.println("in if");
-                System.out.println(myDataSets.getJSONObject(names.getString(i)).getString("resource"));
                 RequestQueue mRequestQueue = Volley.newRequestQueue((Activity) mContext);
                 String url = "http://datasets.antwerpen.be/v4/gis/";
                 final JSONObject sets = new JSONObject();
@@ -156,7 +153,6 @@ public class DataAdapter extends BaseAdapter {
                         JSONObject obj = response;
                         try {
                             sharedPref.edit().putString(myDataSets.getJSONObject(names.getString(finalI)).getString("resource") + ".json", obj.toString()).apply();
-                            System.out.println(obj);
                             Map<String, ?> prefsMap = sharedPref.getAll();
                             for (Map.Entry<String, ?> entry: prefsMap.entrySet()) {
                                 Log.v("SharedPreferences", entry.getKey() + ":" +
@@ -169,8 +165,6 @@ public class DataAdapter extends BaseAdapter {
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        System.out.println("error onErrorResponse");
-                        System.out.println(error);
                         error.printStackTrace();
                     }
                 });

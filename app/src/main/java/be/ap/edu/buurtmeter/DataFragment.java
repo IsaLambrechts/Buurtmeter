@@ -248,8 +248,6 @@ public class DataFragment extends Fragment {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                System.out.println("error onErrorResponse");
-                System.out.println(error);
                 error.printStackTrace();
             }
         });
