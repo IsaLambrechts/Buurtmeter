@@ -208,7 +208,7 @@ public class MapFragment extends Fragment {
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
-            Toast.makeText(context, "Map fragment attached", Toast.LENGTH_SHORT).show();
+            
         }
     }
 
